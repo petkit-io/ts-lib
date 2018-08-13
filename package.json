@@ -1,6 +1,6 @@
 {
   "name": "@petkit/ts-lib",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "typescript library",
   "main": "index.js",
   "scripts": {
