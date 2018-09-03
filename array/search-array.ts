@@ -53,7 +53,9 @@ export class SearchArray<T> {
     cols = cols || defaultSearchRule.cols;
     rows = rows || defaultSearchRule.rows;
 
-    const filterData = this._filterData.filter(item => {
+    const toFilterData = multiple ? this._filterData : this.data;
+
+    const filterData = toFilterData.filter(item => {
       const hitCols = cols.filter(colRule => {
         switch (colRule.type) {
           case CellMatchRuleType.FULL: {
@@ -72,14 +74,14 @@ export class SearchArray<T> {
 
     if (!multiple) {
       this._filterData = filterData;
+      return this.filterData;
     } else {
       this._multiFilterData.push(...filterData);
+      return this.multiFilterData;
     }
-
-    return multiple ? this._multiFilterData : this.filterData;
   }
 
-  public multiFilter(search: string[], rule: ISearchRule) {
+  public multiFilter(search: string[], rule: ISearchRule = {}) {
     if (search.length > 0) {
       search.forEach(v => {
         this.filter(String(v), rule, true);
