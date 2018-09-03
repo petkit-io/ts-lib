@@ -23,12 +23,12 @@ export interface ISearchRule {
 }
 
 export class SearchArray<T> {
+  public data: T[];
   private _filterData: T[];
   private _multiFilterData: T[];
 
-  constructor(public data: T[] = []) {
-    this._filterData = data;
-    this._multiFilterData = [];
+  constructor(data: T[] = []) {
+    this.setData(data);
   }
 
   setData(data: T[]) {
@@ -104,8 +104,9 @@ export class SearchArray<T> {
 
   private _getDefaultSearchRule(): ISearchRule {
     const _data = this.data || [];
+    const _row = _data[0];
 
-    if (!_data[0] || Object.prototype.toString.call(_data[0]) !== '[object Object]') {
+    if (!_row || Object.prototype.toString.call(_row) !== '[object Object]') {
       return {};
     }
 
@@ -113,7 +114,7 @@ export class SearchArray<T> {
     const cols: IColMatchRule[] = [];
     const rows: IRowMatchRule[] = [];
 
-    Object.keys(_data[0]).forEach(k => {
+    Object.keys(_row).forEach(k => {
       cols.push({
         col: k,
         type: CellMatchRuleType.EXIST,
