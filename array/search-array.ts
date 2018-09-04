@@ -24,8 +24,6 @@ export interface ISearchRule {
 
 export class SearchArray<T> {
   public data: T[];
-  private _filterData: T[];
-  private _multiFilterData: T[];
 
   constructor(data: T[] = []) {
     this.setData(data);
@@ -33,29 +31,26 @@ export class SearchArray<T> {
 
   setData(data: T[]) {
     this.data = data;
-    this._filterData = data;
-    this._multiFilterData = [];
     return this;
   }
 
   public filter(search: string, {
     cols,
     rows,
-  }: ISearchRule = {}, multiple = false): T[] {
+  }: ISearchRule = {}, data?: T[]): T[] {
     const defaultSearchRule = this._getDefaultSearchRule();
 
     if (!cols || !rows) {
       if (!defaultSearchRule) {
-        return [];
+        throw new Error('Please input search rules!');
       }
     }
 
     cols = cols || defaultSearchRule.cols;
     rows = rows || defaultSearchRule.rows;
+    const sourceData = data ? data : this.data;
 
-    const toFilterData = multiple ? this._filterData : this.data;
-
-    const filterData = toFilterData.filter(item => {
+    const filterData = sourceData.filter(item => {
       const hitCols = cols.filter(colRule => {
         switch (colRule.type) {
           case CellMatchRuleType.FULL: {
@@ -72,34 +67,42 @@ export class SearchArray<T> {
       }).length > 0;
     });
 
-    if (!multiple) {
-      this._filterData = filterData;
-      return this.filterData;
-    } else {
-      this._multiFilterData.push(...filterData);
-      return this.multiFilterData;
-    }
+    return filterData;
   }
 
-  public multiFilter(search: string[], rule: ISearchRule = {}) {
-    if (search.length > 0) {
+  /**
+   * search数组中每一项是"或"关系，在data中遍历结果，然后去重
+   */
+  public multiFilter(search: string[], rule: ISearchRule = {}): T[] {
+    let multiFilterData = this.data;
+
+    if (Object.prototype.toString.call(search) === '[object Array]' && search.length > 0) {
+      multiFilterData = [];
+
       search.forEach(v => {
-        this.filter(String(v), rule, true);
+        Array.prototype.concat.call(multiFilterData, this.filter(String(v), rule));
       });
 
-      this.endMultiFilter();
+      multiFilterData = Array.from(new Set(multiFilterData));
     }
+
+    return multiFilterData;
   }
 
-  public endMultiFilter() {
-    this.setData(this.multiFilterData);
-  }
+  /**
+   * search split过后的数组中每一项是"与"关系
+   */
+  public spaceFilter(search: string, rule: ISearchRule = {}): T[] {
+    const searches = search.trim().split(' ');
+    let spaceFilterData = this.data;
 
-  get filterData() {
-    return this._filterData;
-  }
-  get multiFilterData() {
-    return this._multiFilterData;
+    if (searches.length > 0) {
+      searches.forEach(s => {
+        spaceFilterData = this.filter(s, rule, spaceFilterData);
+      });
+    }
+
+    return spaceFilterData;
   }
 
   private _getDefaultSearchRule(): ISearchRule {
